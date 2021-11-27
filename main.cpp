@@ -11,9 +11,14 @@
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
 
+#define SCALE 2
+
 SDL_Renderer *renderer;
 SDL_Surface *surface;
 Scene *scene;
+
+unsigned int lastRender;
+int numFrames = 0;
 
 void render() {
     auto *pixels = (Uint8 *) surface->pixels;
@@ -26,6 +31,14 @@ void render() {
     SDL_RenderPresent(renderer);
 
     SDL_DestroyTexture(texture);
+
+    auto currentTime = SDL_GetTicks();
+    auto renderTime = currentTime-lastRender;
+    lastRender = currentTime;
+
+    if(numFrames < 100) {
+        std::cout << ++numFrames << ": " << renderTime << std::endl;
+    }
 }
 
 int main(int argc, char* args[]) {
@@ -46,18 +59,20 @@ int main(int argc, char* args[]) {
         return 1;
     }
 
-    auto *pixels = new Uint8[SCREEN_WIDTH * SCREEN_HEIGHT * 3];
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
-    surface = SDL_CreateRGBSurfaceFrom(pixels, SCREEN_WIDTH, SCREEN_HEIGHT,
+    auto *pixels = new Uint8[SCREEN_WIDTH*SCALE * SCREEN_HEIGHT*SCALE * 3];
+
+    surface = SDL_CreateRGBSurfaceFrom(pixels, SCREEN_WIDTH*SCALE, SCREEN_HEIGHT*SCALE,
                                        24,
-                                       SCREEN_WIDTH * 3,
+                                       SCREEN_WIDTH*SCALE * 3,
                                        0x0000FF,
                                        0x00FF00,
                                        0xFF0000,
                                        0);
     renderer = SDL_CreateRenderer(window, -1, 0);
     scene = new Scene(
-            Camera(SCREEN_WIDTH, SCREEN_HEIGHT, 45, Vector3f(0.0, 3.0, 0.0), Vector3f(0.0, 1.8, 10)),
+            Camera(SCREEN_WIDTH*SCALE, SCREEN_HEIGHT*SCALE, 45, Vector3f(0.0, 3.0, 0.0), Vector3f(0.0, 1.8, 10)),
             vector<Sphere> {
                 Sphere(
                         Vector3f(0, 3.5, -3),
@@ -70,6 +85,8 @@ int main(int argc, char* args[]) {
             vector<Light> {
                 Light(Vector3f(-10, -5, 20))
             });
+
+    lastRender = SDL_GetTicks();
 
     #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(render, 0, true);
