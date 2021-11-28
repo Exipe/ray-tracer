@@ -6,6 +6,7 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#include <emscripten/fetch.h>
 #endif
 
 #define SCREEN_WIDTH 640
@@ -40,6 +41,23 @@ void render() {
         std::cout << ++numFrames << ": " << renderTime << std::endl;
     }
 }
+
+#ifdef __EMSCRIPTEN__
+void downloadFile() {
+    emscripten_fetch_attr_t attr;
+    emscripten_fetch_attr_init(&attr);
+    strcpy(attr.requestMethod, "GET");
+    attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_SYNCHRONOUS | EMSCRIPTEN_FETCH_REPLACE;
+    emscripten_fetch_t *fetch = emscripten_fetch(&attr, "data.txt"); // Blocks here until the operation is complete
+    if (fetch->status == 200) {
+        printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
+        // The data is now available at fetch->data[0] through fetch->data[fetch->numBytes-1];
+      } else {
+        printf("Downloading %s failed, HTTP failure status code: %d.\n", fetch->url, fetch->status);
+      }
+      emscripten_fetch_close(fetch);
+}
+#endif
 
 int main(int argc, char* args[]) {
     SDL_Window* window;
@@ -86,11 +104,12 @@ int main(int argc, char* args[]) {
                 Light(Vector3f(-10, -5, 20))
             });
 
+#ifdef __EMSCRIPTEN__
+    downloadFile();
+#endif
+
     lastRender = SDL_GetTicks();
 
-    #ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop(render, 0, true);
-    #else
     while(true) {
         SDL_Event event;
 
@@ -103,7 +122,6 @@ int main(int argc, char* args[]) {
 
         render();
     }
-    #endif
 
     exit:
     SDL_DestroyWindow(window);
