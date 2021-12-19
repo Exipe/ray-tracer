@@ -37,18 +37,18 @@ void render() {
     auto renderTime = currentTime-lastRender;
     lastRender = currentTime;
 
-    if(numFrames < 100) {
-        std::cout << ++numFrames << ": " << renderTime << std::endl;
-    }
+    std::cout << ++numFrames << ": " << renderTime << std::endl;
 }
 
 #ifdef __EMSCRIPTEN__
-void downloadFile() {
+void downloadFile(string file) {
+    string url = "http://localhost:3000/" + file;
+
     emscripten_fetch_attr_t attr;
     emscripten_fetch_attr_init(&attr);
     strcpy(attr.requestMethod, "GET");
     attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_SYNCHRONOUS | EMSCRIPTEN_FETCH_REPLACE;
-    emscripten_fetch_t *fetch = emscripten_fetch(&attr, "data.txt"); // Blocks here until the operation is complete
+    emscripten_fetch_t *fetch = emscripten_fetch(&attr, url.c_str()); // Blocks here until the operation is complete
     if (fetch->status == 200) {
         printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
         // The data is now available at fetch->data[0] through fetch->data[fetch->numBytes-1];
@@ -105,12 +105,12 @@ int main(int argc, char* args[]) {
             });
 
 #ifdef __EMSCRIPTEN__
-    downloadFile();
+    downloadFile("start");
 #endif
 
     lastRender = SDL_GetTicks();
 
-    while(true) {
+    while(numFrames < 100) {
         SDL_Event event;
 
         while(SDL_PollEvent(&event)) {
@@ -126,5 +126,9 @@ int main(int argc, char* args[]) {
     exit:
     SDL_DestroyWindow(window);
     SDL_Quit();
+
+#ifdef __EMSCRIPTEN__
+    downloadFile("stop");
+#endif
     return 0;
 }

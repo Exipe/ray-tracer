@@ -1,10 +1,7 @@
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.0)
 project(ray_tracer)
 
 set(CMAKE_CXX_STANDARD 14)
-
-set(SDL2_PATH "C:/SDL2-2.0.16/x86_64-w64-mingw32")
-set(SDL2_DIR "C:/SDL2-2.0.16/x86_64-w64-mingw32/lib/cmake/SDL2")
 
 find_package(SDL2 REQUIRED)
 
